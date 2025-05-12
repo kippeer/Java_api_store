@@ -33,6 +33,7 @@ public class ProductController {
             description = "Returns products based on provided filters")
     public ResponseEntity<Page<ProductDTO>> getProducts(
             @Parameter(description = "Product ID (optional)") @RequestParam(required = false) Long id,
+            @Parameter(description = "Description (optional)") @RequestParam(required = false) String description,
             @Parameter(description = "Active status (optional)") @RequestParam(required = false) Boolean active,
             @Parameter(description = "Search keyword (optional)") @RequestParam(required = false) String keyword,
             @Parameter(description = "Category (optional)") @RequestParam(required = false) String category,
@@ -71,6 +72,10 @@ public class ProductController {
         if (lowStockThreshold != null) {
             List<ProductDTO> lowStockProducts = productService.findLowStockProducts(lowStockThreshold);
             return ResponseEntity.ok(new PageImpl<>(lowStockProducts, pageable, lowStockProducts.size()));
+        }
+        // Filter by description
+        if (description != null) {
+            return ResponseEntity.ok(productService.findProductsByDescription(description, pageable));
         }
 
         // Default: return all products

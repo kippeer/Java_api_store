@@ -93,4 +93,9 @@ public class ProductService {
 
         productRepository.deleteById(id);
     }
+    public Page<ProductDTO> findProductsByDescription(String description, Pageable pageable) {
+        return productRepository.findByDescriptionContainingIgnoreCase(description, pageable)
+                .map(productMapper::toDTO);
+    }
+
 }
