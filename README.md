@@ -59,3 +59,36 @@ The application will be available at http://localhost:8080
 A Swagger UI está disponível em: http://localhost:8080/swagger-ui/index.html
 
 A documentação da API está disponível em: http://localhost:8080/v3/api-docs
+
+**Base URL:** `/api/auth`
+| Método | Endpoint       | Descrição                          |
+|--------|----------------|-----------------------------------|
+| POST   | `/signup`      | Registrar novo usuário            |
+| POST   | `/login`       | Fazer login e obter JWT token     |
+| GET    | `/me`          | Obter informações do usuário logado |
+
+### 📦 Pedidos
+**Base URL:** `/api/orders`
+| Método | Endpoint            | Descrição                          |
+|--------|---------------------|-----------------------------------|
+| GET    | `/`                 | Listar pedidos com filtros        |
+| POST   | `/`                 | Criar novo pedido                 |
+| PUT    | `/{id}`             | Atualizar pedido completo         |
+| PUT    | `/{id}/status`      | Atualizar status do pedido        |
+| DELETE | `/{id}`             | Excluir pedido                    |
+
+### 🛍️ Produtos
+**Base URL:** `/api/products`
+| Método | Endpoint    | Descrição                          |
+|--------|-------------|-----------------------------------|
+| GET    | `/`         | Listar produtos com filtros       |
+| POST   | `/`         | Criar novo produto                |
+| PUT    | `/{id}`     | Atualizar produto completo        |
+| DELETE | `/{id}`     | Excluir produto                   |
+
+### 📊 Relatórios
+**Base URL:** `/api/reports`
+| Método | Endpoint          | Descrição                          |
+|--------|-------------------|-----------------------------------|
+| GET    | `/sales`          | Relatório de vendas               |
+| GET    | `/orders/status`  | Distribuição de status de pedidos |
