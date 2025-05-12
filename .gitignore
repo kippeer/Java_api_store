@@ -54,19 +54,8 @@ yarn-debug.log
 yarn-error.log
 pnpm-debug.log
 
-# Docker
-**/docker-compose.override.yml
-**/Dockerfile.local
-**/.docker/
-**/.dockerignore
 
-# Database / temp files
-*.h2.db
-*.mv.db
-*.sqlite
-*.db
-*.sql
-*.tmp
+
 
 # IDEs e tools
 *.sw?
