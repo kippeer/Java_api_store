@@ -1,16 +1,16 @@
-# Store API
+# API de Loja
 
-A RESTful API for an online store management system built with Spring Boot.
+Uma API RESTful para sistema de gestão de e-commerce construída com Spring Boot.
 
-## Features
+## Funcionalidades
 
-- Complete CRUD operations for products and orders
-- User authentication with JWT
-- Role-based authorization (ADMIN, USER)
-- Payment processing with multiple payment methods
-- Order status management
-- Product inventory management
-- Comprehensive API documentation with Swagger/OpenAPI
+- Operações CRUD completas para produtos e pedidos
+- Autenticação de usuários com JWT
+- Autorização baseada em papéis (ADMIN, USER)
+- Processamento de pagamentos com múltiplos métodos
+- Gerenciamento de status de pedidos
+- Controle de estoque de produtos
+- Documentação abrangente da API com Swagger/OpenAPI
 
 ## Technology Stack
 
@@ -32,7 +32,7 @@ A RESTful API for an online store management system built with Spring Boot.
 
 ### Configuration
 
-The application can be configured through the `application.yml` file located in the `src/main/resources` directory.
+A aplicação pode ser configurada através do arquivo application.yml localizado em src/main/resources.
 
 Key configuration properties:
 
@@ -55,8 +55,7 @@ mvn spring-boot:run
 
 The application will be available at http://localhost:8080
 
-### API Documentation
+### Documentação da API
+A Swagger UI está disponível em: http://localhost:8080/swagger-ui/index.html
 
-Swagger UI is available at: http://localhost:8080/swagger-ui/index.htm
-
-API documentation is available at: http://localhost:8080/v3/api-docs
+A documentação da API está disponível em: http://localhost:8080/v3/api-docs
