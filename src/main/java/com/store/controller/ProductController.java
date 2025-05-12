@@ -78,14 +78,14 @@ public class ProductController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENT', 'OPERATOR')")
     @Operation(summary = "Create product", description = "Creates a new product")
     public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody ProductDTO productDTO) {
         return new ResponseEntity<>(productService.createProduct(productDTO), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENT', 'OPERATOR')")
     @Operation(summary = "Update product", description = "Updates an existing product")
     public ResponseEntity<ProductDTO> updateProduct(
             @Parameter(description = "Product ID", required = true) @PathVariable Long id,

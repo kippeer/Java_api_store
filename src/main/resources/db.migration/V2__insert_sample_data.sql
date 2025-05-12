@@ -153,7 +153,7 @@ VALUES (
     10.00,   -- Custo de envio
     5.00,    -- Impostos
     0.00,    -- Descontos
-    'CREDIT_CARD',  -- Método de pagamento
+    'CARTAO_DE_CREDITO',  -- Método de pagamento
     '1234567890',   -- Referência de pagamento (exemplo)
     'Rua Exemplo, 123, Cidade',  -- Endereço de envio
     'TRACK12345',    -- Número de rastreamento

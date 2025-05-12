@@ -52,10 +52,10 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         // Secured endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyRole("CLIENT","OPERATOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyRole("CLIENT","OPERATOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
-                        .requestMatchers("/api/orders/**").hasAnyRole("ADMIN", "USER")
+                        .requestMatchers("/api/orders/**").hasAnyRole("ADMIN", "CLIENT","OPERATOR")
                         .anyRequest().authenticated()
                 );
 
