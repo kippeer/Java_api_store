@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/storedb
     username: postgres
-    password: postgres
+    password: adm
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -12,11 +12,13 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: true
-  security:
-    user:
-      name: admin
-      password: admin
-      roles: ADMIN
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+    clean-disabled: true  # Prevents accidenta
 
 server:
   port: 8080
