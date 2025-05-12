@@ -36,4 +36,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status = 'DELIVERED' AND o.createdAt BETWEEN :startDate AND :endDate")
     BigDecimal calculateTotalSales(@Param("startDate") LocalDateTime startDate,
                                    @Param("endDate") LocalDateTime endDate);
+    List<Order> findByCreatedAtBetweenAndStatus(LocalDateTime startDate, LocalDateTime endDate, Order.OrderStatus status);
 }
