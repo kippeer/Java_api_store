@@ -89,6 +89,6 @@ public class Order {
     }
 
     public enum PaymentMethod {
-        CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, PAYPAL, CASH_ON_DELIVERY
+        CARTAO_DE_CREDITO, BOLETO, TRANSFERENCIA_BANCARIA
     }
 }
