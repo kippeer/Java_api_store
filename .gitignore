@@ -1,5 +1,79 @@
-node_modules
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Gradle
+.gradle/
+build/
+!gradle-wrapper.jar
+gradle-wrapper.properties
+
+# Spring Boot specific
+*.iml
+*.iws
+*.ipr
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+
+# Logs
+logs/
+*.log
+*.out
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Environment files
 .env
-/.idea
-/.idea
-/.idea
+.env.*
+
+# Node (caso tenha microfrontends ou Node.js integrados)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Docker
+**/docker-compose.override.yml
+**/Dockerfile.local
+**/.docker/
+**/.dockerignore
+
+# Database / temp files
+*.h2.db
+*.mv.db
+*.sqlite
+*.db
+*.sql
+*.tmp
+
+# IDEs e tools
+*.sw?
+*.bak
+*.tmp
+*.sublime-project
+*.sublime-workspace
+
+# Others
+!.gitkeep
