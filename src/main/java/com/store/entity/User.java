@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.store.entity.enums.UserRole;  // Importando a enumeração
 
 @Entity
 @Table(name = "users")
@@ -41,7 +42,8 @@ public class User implements UserDetails {
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
-    private Set<String> roles = new HashSet<>();
+    @Enumerated(EnumType.STRING)  // Agora, a lista de roles será armazenada como valores de enum
+    private Set<UserRole> roles = new HashSet<>(); // Alterado para Set<UserRole>
 
     private boolean enabled = true;
 
@@ -59,7 +61,7 @@ public class User implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))  // Usando role.name() para gerar a autoridade
                 .collect(Collectors.toList());
     }
 

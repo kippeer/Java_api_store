@@ -4,6 +4,7 @@ import com.store.dto.AuthRequest;
 import com.store.dto.AuthResponse;
 import com.store.dto.UserDTO;
 import com.store.entity.User;
+import com.store.entity.enums.UserRole;
 import com.store.mapper.UserMapper;
 import com.store.repository.UserRepository;
 import com.store.security.JwtTokenProvider;
@@ -48,8 +49,8 @@ public class AuthService {
 
         // Set default role if none provided
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            Set<String> roles = new HashSet<>();
-            roles.add("USER");
+            Set<UserRole> roles = new HashSet<>();
+            roles.add(UserRole.CLIENT); // ou o papel padrão desejado
             user.setRoles(roles);
         }
 
@@ -76,8 +77,8 @@ public class AuthService {
 
         User userDetails = (User) authentication.getPrincipal();
 
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(item -> item.getAuthority().replace("ROLE_", ""))
+        List<UserRole> roles = userDetails.getAuthorities().stream()
+                .map(item -> UserRole.valueOf(item.getAuthority().replace("ROLE_", "")))  // Convertendo a autoridade para o enum UserRole
                 .collect(Collectors.toList());
 
         return new AuthResponse(

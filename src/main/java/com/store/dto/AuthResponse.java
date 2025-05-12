@@ -1,5 +1,6 @@
 package com.store.dto;
 
+import com.store.entity.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,9 +17,9 @@ public class AuthResponse {
     private Long id;
     private String username;
     private String email;
-    private List<String> roles;
+    private List<UserRole> roles; // Alterado para List<UserRole>
 
-    public AuthResponse(String token, Long id, String username, String email, List<String> roles) {
+    public AuthResponse(String token, Long id, String username, String email, List<UserRole> roles) {
         this.token = token;
         this.id = id;
         this.username = username;
