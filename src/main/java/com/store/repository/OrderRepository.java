@@ -30,11 +30,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                                        @Param("maxAmount") BigDecimal maxAmount,
                                        Pageable pageable);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status")
-    Long countByStatus(@Param("status") OrderStatus status);
 
-    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status = 'DELIVERED' AND o.createdAt BETWEEN :startDate AND :endDate")
-    BigDecimal calculateTotalSales(@Param("startDate") LocalDateTime startDate,
-                                   @Param("endDate") LocalDateTime endDate);
     List<Order> findByCreatedAtBetweenAndStatus(LocalDateTime startDate, LocalDateTime endDate, Order.OrderStatus status);
 }

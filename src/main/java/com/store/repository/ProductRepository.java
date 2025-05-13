@@ -18,8 +18,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> findByDescriptionContainingIgnoreCase(String description, Pageable pageable);
 
 
-    Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
-
     Page<Product> findByCategoryIgnoreCase(String category, Pageable pageable);
 
     @Query("SELECT p FROM Product p WHERE p.price >= :minPrice AND p.price <= :maxPrice")
