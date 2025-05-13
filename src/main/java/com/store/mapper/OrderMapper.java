@@ -11,9 +11,6 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
-
-    OrderMapper INSTANCE = Mappers.getMapper(OrderMapper.class);
-
     @Mapping(source = "user.id", target = "userId")
     @Mapping(source = "status", target = "status")
     @Mapping(source = "paymentMethod", target = "paymentMethod")
