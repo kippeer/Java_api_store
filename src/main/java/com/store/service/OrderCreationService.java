@@ -4,6 +4,7 @@ import com.store.dto.OrderDTO;
 import com.store.entity.Order;
 import com.store.entity.OrderItem;
 import com.store.entity.Product;
+import com.store.mapper.OrderMapper;
 import com.store.repository.OrderRepository;
 import com.store.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class OrderCreationService {
     private final OrderRepository orderRepository;
     private final OrderAuthorizationService orderAuthorizationService;
     private final ProductStockService productStockService;
+    private final OrderMapper orderMapper;  // Adicionando o mapper
 
     public Order createOrder(OrderDTO orderDTO) {
         Order order = initializeOrder(orderDTO);
@@ -28,19 +30,11 @@ public class OrderCreationService {
     }
 
     private Order initializeOrder(OrderDTO orderDTO) {
-        Order order = new Order();
-        order.setUser(orderAuthorizationService.getCurrentUser());
-        order.setShippingAddress(orderDTO.getShippingAddress());
-        
-        if (orderDTO.getStatus() != null) {
-            order.setStatus(Order.OrderStatus.valueOf(orderDTO.getStatus()));
-        }
-        
-        if (orderDTO.getPaymentMethod() != null) {
-            order.setPaymentMethod(Order.PaymentMethod.valueOf(orderDTO.getPaymentMethod()));
-        }
+        // Usando o OrderMapper para mapear o DTO para a entidade Order
+        Order order = orderMapper.toOrder(orderDTO);
 
-        order.setPaymentReference(orderDTO.getPaymentReference());
+        order.setUser(orderAuthorizationService.getCurrentUser());
+
         order.setShippingCost(orderDTO.getShippingCost() != null ? orderDTO.getShippingCost() : BigDecimal.ZERO);
         order.setTaxAmount(orderDTO.getTaxAmount() != null ? orderDTO.getTaxAmount() : BigDecimal.ZERO);
         order.setDiscountAmount(orderDTO.getDiscountAmount() != null ? orderDTO.getDiscountAmount() : BigDecimal.ZERO);
@@ -51,20 +45,19 @@ public class OrderCreationService {
 
     private List<OrderItem> createOrderItems(OrderDTO orderDTO, Order order) {
         List<OrderItem> orderItems = new ArrayList<>();
-        
+
+        // Utilizando o mapper para criar os itens do pedido
         for (OrderDTO.OrderItemDTO itemDTO : orderDTO.getItems()) {
             Product product = productStockService.getAndValidateProduct(itemDTO.getProductId(), itemDTO.getQuantity());
-            
-            OrderItem orderItem = new OrderItem();
+
+            OrderItem orderItem = orderMapper.toOrderItem(itemDTO); // Usando o mapper para criar OrderItem a partir do DTO
             orderItem.setOrder(order);
             orderItem.setProduct(product);
-            orderItem.setQuantity(itemDTO.getQuantity());
             orderItem.setPrice(product.getPrice());
-            orderItem.setProductName(product.getName());
-            
+
             orderItems.add(orderItem);
         }
-        
+
         return orderItems;
     }
 }

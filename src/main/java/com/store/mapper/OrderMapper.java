@@ -31,4 +31,16 @@ public interface OrderMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "items", ignore = true) // se você não estiver atualizando os itens aqui
     void updateOrderFromDTO(OrderDTO dto, @MappingTarget Order order);
+
+    @Mapping(source = "shippingAddress", target = "shippingAddress")
+    @Mapping(source = "status", target = "status")
+    @Mapping(source = "paymentMethod", target = "paymentMethod")
+    @Mapping(source = "paymentReference", target = "paymentReference")
+    @Mapping(source = "shippingCost", target = "shippingCost")
+    @Mapping(source = "taxAmount", target = "taxAmount")
+    @Mapping(source = "discountAmount", target = "discountAmount")
+    @Mapping(source = "trackingNumber", target = "trackingNumber")
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "items", ignore = true)
+    Order toOrder(OrderDTO orderDTO);  // Método de mapeamento de OrderDTO para Order
 }
