@@ -14,18 +14,29 @@ import java.util.List;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    Page<Product> findByActiveTrue(Pageable pageable);
-    Page<Product> findByDescriptionContainingIgnoreCase(String description, Pageable pageable);
+    @Query("""
+            SELECT p FROM Product p 
+            WHERE (:category IS NULL OR LOWER(p.category) = LOWER(:category))
+            AND (:description IS NULL OR LOWER(p.description) LIKE LOWER(CONCAT('%', :description, '%')))
+            AND (:minPrice IS NULL OR p.price >= :minPrice)
+            AND (:maxPrice IS NULL OR p.price <= :maxPrice)
+            AND (:active IS NULL OR p.active = :active)
+            """)
+    Page<Product> findProductsByFilters(
+            @Param("category") String category,
+            @Param("description") String description,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("active") Boolean active,
+            Pageable pageable
+    );
 
-
-    Page<Product> findByCategoryIgnoreCase(String category, Pageable pageable);
-
-    @Query("SELECT p FROM Product p WHERE p.price >= :minPrice AND p.price <= :maxPrice")
-    Page<Product> findByPriceBetween(@Param("minPrice") BigDecimal minPrice,
-                                     @Param("maxPrice") BigDecimal maxPrice,
-                                     Pageable pageable);
-
-    @Query("SELECT p FROM Product p WHERE p.name LIKE %:keyword% OR p.description LIKE %:keyword% OR p.category LIKE %:keyword%")
+    @Query("""
+            SELECT p FROM Product p 
+            WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) 
+            OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) 
+            OR LOWER(p.category) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            """)
     Page<Product> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     @Query("SELECT p FROM Product p WHERE p.stockQuantity <= :threshold AND p.active = true")

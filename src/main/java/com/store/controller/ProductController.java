@@ -1,6 +1,7 @@
 package com.store.controller;
 
 import com.store.dto.ProductDTO;
+import com.store.dto.ProductFilterDTO;
 import com.store.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,8 +30,7 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    @Operation(summary = "Get products with optional filtering",
-            description = "Returns products based on provided filters")
+    @Operation(summary = "Get products with optional filtering", description = "Returns products based on provided filters")
     public ResponseEntity<Page<ProductDTO>> getProducts(
             @Parameter(description = "Product ID (optional)") @RequestParam(required = false) Long id,
             @Parameter(description = "Description (optional)") @RequestParam(required = false) String description,
@@ -42,44 +42,37 @@ public class ProductController {
             @Parameter(description = "Low stock threshold (optional)") @RequestParam(required = false) Integer lowStockThreshold,
             @PageableDefault(size = 10, sort = "id") Pageable pageable
     ) {
-        // If specific product ID is requested
+        // Se um ID específico for solicitado
         if (id != null) {
             ProductDTO product = productService.findProductById(id);
             return ResponseEntity.ok(new PageImpl<>(Collections.singletonList(product), pageable, 1));
         }
 
-        // Search by keyword
+        // Preparar o filtro para enviar ao service
+        ProductFilterDTO filterDTO = new ProductFilterDTO();
+        filterDTO.setDescription(description);
+        filterDTO.setCategory(category);
+        filterDTO.setMinPrice(minPrice);
+        filterDTO.setMaxPrice(maxPrice);
+        filterDTO.setActive(active);
+        filterDTO.setPage(pageable.getPageNumber());
+        filterDTO.setSize(pageable.getPageSize());
+
+        // Buscar produtos com base nos filtros
+        Page<ProductDTO> products = productService.findProductsByFilters(filterDTO);
+
+        // Se keyword for fornecida, fazer uma pesquisa por palavra-chave
         if (keyword != null) {
-            return ResponseEntity.ok(productService.searchProducts(keyword, pageable));
+            products = productService.searchProducts(keyword, pageable);
         }
 
-        // Filter by category
-        if (category != null) {
-            return ResponseEntity.ok(productService.findProductsByCategory(category, pageable));
-        }
-
-        // Filter by price range
-        if (minPrice != null && maxPrice != null) {
-            return ResponseEntity.ok(productService.findProductsByPriceRange(minPrice, maxPrice, pageable));
-        }
-
-        // Filter by active status
-        if (active != null) {
-            return ResponseEntity.ok(productService.findActiveProducts(pageable));
-        }
-
-        // Get low stock products
+        // Se a quantidade de produtos de baixo estoque for solicitada
         if (lowStockThreshold != null) {
             List<ProductDTO> lowStockProducts = productService.findLowStockProducts(lowStockThreshold);
             return ResponseEntity.ok(new PageImpl<>(lowStockProducts, pageable, lowStockProducts.size()));
         }
-        // Filter by description
-        if (description != null) {
-            return ResponseEntity.ok(productService.findProductsByDescription(description, pageable));
-        }
 
-        // Default: return all products
-        return ResponseEntity.ok(productService.findAllProducts(pageable));
+        return ResponseEntity.ok(products);
     }
 
     @PostMapping
@@ -97,7 +90,7 @@ public class ProductController {
             @Valid @RequestBody ProductDTO productDTO
     ) {
         productDTO.setId(id);
-        return ResponseEntity.ok(productService.updateProduct(productDTO));
+        return ResponseEntity.ok(productService.updateProduct(id, productDTO));
     }
 
     @DeleteMapping("/{id}")
