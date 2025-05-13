@@ -22,12 +22,12 @@ public class OrderCreationService {
     private final OrderMapper orderMapper;
 
     public Order createOrder(OrderDTO orderDTO) {
-        Order order = mapOrderFromDTO(orderDTO);
-        order.setItems(createOrderItems(orderDTO, order));
+        Order order = orderMapper.toOrder(orderDTO); // simples e direto
+        List<OrderItem> items = createOrderItems(orderDTO, order);
+        order.setItems(items);
         order.recalculateTotal();
         return orderRepository.save(order);
     }
-
     private Order mapOrderFromDTO(OrderDTO orderDTO) {
         Order order = orderMapper.toOrder(orderDTO);
         order.setUser(orderAuthorizationService.getCurrentUser());
@@ -46,11 +46,7 @@ public class OrderCreationService {
                 itemDTO.getQuantity()
         );
 
-        OrderItem orderItem = orderMapper.toOrderItem(itemDTO);
-        orderItem.setOrder(order);
-        orderItem.setProduct(product);
-        orderItem.setPrice(product.getPrice()); // Garantir preço atualizado
-
-        return orderItem;
+        return orderMapper.toOrderItem(itemDTO, order, product);
     }
+
 }

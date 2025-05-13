@@ -3,6 +3,7 @@ package com.store.mapper;
 import com.store.dto.OrderDTO;
 import com.store.entity.Order;
 import com.store.entity.OrderItem;
+import com.store.entity.Product;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -43,4 +44,11 @@ public interface OrderMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "items", ignore = true)
     Order toOrder(OrderDTO orderDTO);  // Método de mapeamento de OrderDTO para Order
+
+    @Mapping(target = "id", ignore = true) // <--- ESSENCIAL
+    @Mapping(source = "itemDTO.productId", target = "product.id")
+    @Mapping(source = "product", target = "product")
+    @Mapping(source = "order", target = "order")
+    @Mapping(source = "product.price", target = "price")
+    OrderItem toOrderItem(OrderDTO.OrderItemDTO itemDTO, Order order, Product product);
 }

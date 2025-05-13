@@ -14,40 +14,54 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class OrderStatusService {
+
     private final OrderRepository orderRepository;
     private final OrderAuthorizationService orderAuthorizationService;
 
     @Transactional
-    public Order updateOrderStatus(Long id, OrderStatus status) {
+    public Order updateOrderStatus(Long id, OrderStatus newStatus) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + id));
 
         User currentUser = orderAuthorizationService.getCurrentUser();
 
-        // Validação separada
-        validateStatusUpdate(order, status, currentUser);
+        validateStatusUpdate(order, newStatus, currentUser);
 
-        order.setStatus(status);
+        order.setStatus(newStatus);
         return orderRepository.save(order);
     }
 
     private void validateStatusUpdate(Order order, OrderStatus newStatus, User currentUser) {
-        boolean isAdmin = currentUser.getRoles().contains("ADMIN");
+        if (isAdmin(currentUser)) return;
 
-        if (!isAdmin) {
-            if (!order.getUser().getId().equals(currentUser.getId())) {
-                throw new OrderAccessDeniedException("You don't have permission to update this order");
-            }
+        validateUserOwnership(order, currentUser);
+        validateStatusPermission(newStatus);
+        validatePendingCancellation(order, newStatus);
+    }
 
-            if (newStatus == OrderStatus.SHIPPED ||
-                    newStatus == OrderStatus.DELIVERED ||
-                    newStatus == OrderStatus.REFUNDED) {
-                throw new OrderAccessDeniedException("You don't have permission to set this order status");
-            }
+    private boolean isAdmin(User user) {
+        return user.getRoles().contains("ADMIN");
+    }
 
-            if (newStatus == OrderStatus.CANCELLED && order.getStatus() != OrderStatus.PENDING) {
-                throw new InvalidOrderStatusException("You can only cancel pending orders");
+    private void validateUserOwnership(Order order, User user) {
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new OrderAccessDeniedException("You don't have permission to update this order");
+        }
+    }
+
+    private void validateStatusPermission(OrderStatus status) {
+        switch (status) {
+            case SHIPPED, DELIVERED, REFUNDED -> throw new OrderAccessDeniedException(
+                    "You don't have permission to set this order status");
+            default -> {
+                // Permitido
             }
+        }
+    }
+
+    private void validatePendingCancellation(Order order, OrderStatus newStatus) {
+        if (newStatus == OrderStatus.CANCELLED && order.getStatus() != OrderStatus.PENDING) {
+            throw new InvalidOrderStatusException("You can only cancel pending orders");
         }
     }
 }
