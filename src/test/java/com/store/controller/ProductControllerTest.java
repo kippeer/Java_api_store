@@ -1,130 +1,186 @@
 package com.store.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.store.dto.ProductDTO;
+import com.store.dto.ProductFilterDTO;
 import com.store.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.data.domain.*;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-class ProductControllerTest {
+@WebMvcTest(ProductController.class)
+public class ProductControllerTest {
 
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private ProductService productService;
-    private ProductController productController;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private ProductDTO sampleProductDTO;
+    private final Long PRODUCT_ID = 1L;
 
     @BeforeEach
-    void setUp() {
-        productService = mock(ProductService.class);
-        productController = new ProductController(productService);
+    public void setup() {
+        sampleProductDTO = new ProductDTO();
+        sampleProductDTO.setId(PRODUCT_ID);
+        sampleProductDTO.setName("Test Product");
+        sampleProductDTO.setPrice(new BigDecimal("29.99"));
+        // Set other required properties for a valid ProductDTO
     }
 
     @Test
-    void shouldReturnProductById() {
-        ProductDTO dto = new ProductDTO();
-        dto.setId(1L);
-
+    @WithMockUser
+    public void getProducts_withNoFilters_shouldReturnAllProducts() throws Exception {
+        // Arrange
         Pageable pageable = PageRequest.of(0, 10);
-        when(productService.findProductById(1L)).thenReturn(dto);
+        List<ProductDTO> productList = Collections.singletonList(sampleProductDTO);
+        PageImpl<ProductDTO> productPage = new PageImpl<>(productList, pageable, productList.size());
+        
+        when(productService.findProductsByFilters(any(ProductFilterDTO.class), any(Pageable.class)))
+            .thenReturn(productPage);
 
-        ResponseEntity<Page<ProductDTO>> response = productController.getProducts(
-                1L, null, null, null, null, null, null, pageable);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(1, response.getBody().getTotalElements());
-        assertEquals(dto.getId(), response.getBody().getContent().get(0).getId());
+        // Act & Assert
+        mockMvc.perform(get("/api/products")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(PRODUCT_ID))
+                .andExpect(jsonPath("$.content[0].name").value("Test Product"));
+        
+        verify(productService).findProductsByFilters(any(ProductFilterDTO.class), any(Pageable.class));
     }
 
     @Test
-    void shouldReturnProductsByKeyword() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<ProductDTO> page = new PageImpl<>(Collections.emptyList());
-        when(productService.searchProducts("test", pageable)).thenReturn(page);
+    @WithMockUser(roles = {"ADMIN"})
+    public void createProduct_asAdmin_shouldReturnCreatedProduct() throws Exception {
+        // Arrange
+        when(productService.createProduct(any(ProductDTO.class))).thenReturn(sampleProductDTO);
 
-        ResponseEntity<Page<ProductDTO>> response = productController.getProducts(
-                null, null, "test", null, null, null, null, pageable);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(productService).searchProducts("test", pageable);
+        // Act & Assert
+        mockMvc.perform(post("/api/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleProductDTO)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(PRODUCT_ID))
+                .andExpect(jsonPath("$.name").value("Test Product"));
+        
+        verify(productService).createProduct(any(ProductDTO.class));
     }
 
     @Test
-    void shouldReturnAllProductsWhenNoFiltersProvided() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<ProductDTO> page = new PageImpl<>(Collections.emptyList());
-        when(productService.findAllProducts(pageable)).thenReturn(page);
+    @WithMockUser(roles = {"CLIENT"})
+    public void createProduct_asClient_shouldReturnCreatedProduct() throws Exception {
+        // Arrange
+        when(productService.createProduct(any(ProductDTO.class))).thenReturn(sampleProductDTO);
 
-        ResponseEntity<Page<ProductDTO>> response = productController.getProducts(
-                null, null, null, null, null, null, null, pageable);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(productService).findAllProducts(pageable);
+        // Act & Assert
+        mockMvc.perform(post("/api/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleProductDTO)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(PRODUCT_ID));
+        
+        verify(productService).createProduct(any(ProductDTO.class));
     }
 
     @Test
-    void shouldCreateProduct() {
-        ProductDTO input = new ProductDTO();
-        input.setName("New Product");
+    @WithMockUser(roles = {"OPERATOR"})
+    public void createProduct_asOperator_shouldReturnCreatedProduct() throws Exception {
+        // Arrange
+        when(productService.createProduct(any(ProductDTO.class))).thenReturn(sampleProductDTO);
 
-        ProductDTO saved = new ProductDTO();
-        saved.setId(1L);
-        saved.setName("New Product");
-
-        when(productService.createProduct(input)).thenReturn(saved);
-
-        ResponseEntity<ProductDTO> response = productController.createProduct(input);
-
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals(saved.getId(), response.getBody().getId());
+        // Act & Assert
+        mockMvc.perform(post("/api/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleProductDTO)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(PRODUCT_ID));
+        
+        verify(productService).createProduct(any(ProductDTO.class));
     }
 
     @Test
-    void shouldUpdateProduct() {
-        ProductDTO input = new ProductDTO();
-        input.setName("Updated Product");
-
-        ProductDTO updated = new ProductDTO();
-        updated.setId(2L);
-        updated.setName("Updated Product");
-
-        when(productService.updateProduct(any())).thenReturn(updated);
-
-        ResponseEntity<ProductDTO> response = productController.updateProduct(2L, input);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(updated.getId(), response.getBody().getId());
+    @WithMockUser(roles = {"USER"})
+    public void createProduct_asUser_shouldBeForbidden() throws Exception {
+        // Act & Assert
+        mockMvc.perform(post("/api/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleProductDTO)))
+                .andExpect(status().isForbidden());
+        
+        verify(productService, never()).createProduct(any(ProductDTO.class));
     }
 
     @Test
-    void shouldDeleteProduct() {
-        Long productId = 3L;
-        doNothing().when(productService).deleteProduct(productId);
+    @WithMockUser(roles = {"ADMIN"})
+    public void updateProduct_withValidData_shouldReturnUpdatedProduct() throws Exception {
+        // Arrange
+        when(productService.updateProduct(any(ProductDTO.class))).thenReturn(sampleProductDTO);
 
-        ResponseEntity<Void> response = productController.deleteProduct(productId);
-
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        verify(productService).deleteProduct(productId);
+        // Act & Assert
+        mockMvc.perform(put("/api/products/{id}", PRODUCT_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleProductDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(PRODUCT_ID));
+        
+        verify(productService).updateProduct(any(ProductDTO.class));
     }
 
     @Test
-    void shouldReturnLowStockProducts() {
-        Pageable pageable = PageRequest.of(0, 10);
-        List<ProductDTO> lowStockProducts = List.of(new ProductDTO());
+    @WithMockUser(roles = {"USER"})
+    public void updateProduct_asUser_shouldBeForbidden() throws Exception {
+        // Act & Assert
+        mockMvc.perform(put("/api/products/{id}", PRODUCT_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleProductDTO)))
+                .andExpect(status().isForbidden());
+        
+        verify(productService, never()).updateProduct(any(ProductDTO.class));
+    }
 
-        when(productService.findLowStockProducts(5)).thenReturn(lowStockProducts);
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    public void deleteProduct_asAdmin_shouldReturnNoContent() throws Exception {
+        // Arrange
+        doNothing().when(productService).deleteProduct(PRODUCT_ID);
 
-        ResponseEntity<Page<ProductDTO>> response = productController.getProducts(
-                null, null, null, null, null, null, 5, pageable);
+        // Act & Assert
+        mockMvc.perform(delete("/api/products/{id}", PRODUCT_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+        
+        verify(productService).deleteProduct(PRODUCT_ID);
+    }
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(1, response.getBody().getTotalElements());
+    @Test
+    @WithMockUser(roles = {"CLIENT"})
+    public void deleteProduct_asClient_shouldBeForbidden() throws Exception {
+        // Act & Assert
+        mockMvc.perform(delete("/api/products/{id}", PRODUCT_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+        
+        verify(productService, never()).deleteProduct(any());
     }
 }

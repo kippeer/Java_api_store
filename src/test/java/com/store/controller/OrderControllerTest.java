@@ -1,87 +1,160 @@
 package com.store.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.store.dto.OrderDTO;
-import com.store.dto.OrderDTO.OrderItemDTO;
+import com.store.dto.OrderFilter;
 import com.store.entity.Order.OrderStatus;
 import com.store.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
-import org.springframework.data.domain.*;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-class OrderControllerTest {
+@WebMvcTest(OrderController.class)
+public class OrderControllerTest {
 
-    @InjectMocks
-    private OrderController orderController;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Mock
+    @MockBean
     private OrderService orderService;
 
-    private OrderDTO mockOrder;
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private OrderDTO sampleOrderDTO;
+    private final Long ORDER_ID = 1L;
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        mockOrder = new OrderDTO();
-        mockOrder.setId(1L);
-        mockOrder.setUserId(1L);
-        mockOrder.setStatus(OrderStatus.PENDING.name());
-        mockOrder.setTotalAmount(BigDecimal.valueOf(100.0));
-        mockOrder.setShippingAddress("123 Main St");
-        mockOrder.setItems(List.of(new OrderItemDTO(1L, 1L, "Product A", 2, BigDecimal.valueOf(50.0))));
-        mockOrder.setCreatedAt(LocalDateTime.now());
-        mockOrder.setUpdatedAt(LocalDateTime.now());
+    public void setup() {
+        sampleOrderDTO = new OrderDTO();
+        sampleOrderDTO.setId(ORDER_ID);
+        // Set other required properties for a valid OrderDTO
     }
 
     @Test
-    void shouldReturnOrderById() {
-        when(orderService.findOrderById(1L)).thenReturn(mockOrder);
-
+    @WithMockUser
+    public void getOrders_withNoFilters_shouldReturnAllOrders() throws Exception {
+        // Arrange
         Pageable pageable = PageRequest.of(0, 10);
-        ResponseEntity<?> response = orderController.getOrders(1L, null, null, null, null, null, false, pageable);
+        List<OrderDTO> orderList = Collections.singletonList(sampleOrderDTO);
+        PageImpl<OrderDTO> orderPage = new PageImpl<>(orderList, pageable, orderList.size());
+        
+        when(orderService.findOrdersByFilter(any(OrderFilter.class), any(Pageable.class)))
+            .thenReturn(orderPage);
 
-        assertEquals(200, response.getStatusCodeValue());
-        Page<OrderDTO> page = (Page<OrderDTO>) response.getBody();
-        assertEquals(1, page.getContent().size());
-        assertEquals(mockOrder.getId(), page.getContent().get(0).getId());
+        // Act & Assert
+        mockMvc.perform(get("/api/orders")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(ORDER_ID));
+        
+        verify(orderService).findOrdersByFilter(any(OrderFilter.class), any(Pageable.class));
     }
 
     @Test
-    void shouldCreateOrder() {
-        when(orderService.createOrder(any(OrderDTO.class))).thenReturn(mockOrder);
+    @WithMockUser
+    public void getOrders_withId_shouldReturnSpecificOrder() throws Exception {
+        // Arrange
+        when(orderService.findOrderById(ORDER_ID)).thenReturn(sampleOrderDTO);
 
-        ResponseEntity<OrderDTO> response = orderController.createOrder(mockOrder);
-
-        assertEquals(201, response.getStatusCodeValue());
-        assertEquals(mockOrder.getId(), response.getBody().getId());
+        // Act & Assert
+        mockMvc.perform(get("/api/orders")
+                .param("id", ORDER_ID.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(ORDER_ID));
+        
+        verify(orderService).findOrderById(ORDER_ID);
     }
 
     @Test
-    void shouldUpdateOrderStatus() {
-        when(orderService.updateOrderStatus(1L, OrderStatus.SHIPPED)).thenReturn(mockOrder);
+    @WithMockUser
+    public void createOrder_withValidData_shouldReturnCreatedOrder() throws Exception {
+        // Arrange
+        when(orderService.createOrder(any(OrderDTO.class))).thenReturn(sampleOrderDTO);
 
-        ResponseEntity<OrderDTO> response = orderController.updateOrderStatus(1L, OrderStatus.SHIPPED);
-
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(mockOrder.getStatus(), response.getBody().getStatus());
+        // Act & Assert
+        mockMvc.perform(post("/api/orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleOrderDTO)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(ORDER_ID));
+        
+        verify(orderService).createOrder(any(OrderDTO.class));
     }
 
     @Test
-    void shouldDeleteOrder() {
-        doNothing().when(orderService).deleteOrder(1L);
+    @WithMockUser
+    public void updateOrder_withValidData_shouldReturnUpdatedOrder() throws Exception {
+        // Arrange
+        when(orderService.updateOrder(any(OrderDTO.class))).thenReturn(sampleOrderDTO);
 
-        ResponseEntity<Void> response = orderController.deleteOrder(1L);
+        // Act & Assert
+        mockMvc.perform(put("/api/orders/{id}", ORDER_ID)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sampleOrderDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ORDER_ID));
+        
+        verify(orderService).updateOrder(any(OrderDTO.class));
+    }
 
-        assertEquals(204, response.getStatusCodeValue());
-        verify(orderService, times(1)).deleteOrder(1L);
+    @Test
+    @WithMockUser
+    public void updateOrderStatus_withValidStatus_shouldReturnUpdatedOrder() throws Exception {
+        // Arrange
+        OrderStatus newStatus = OrderStatus.SHIPPED;
+        when(orderService.updateOrderStatus(eq(ORDER_ID), eq(newStatus))).thenReturn(sampleOrderDTO);
+
+        // Act & Assert
+        mockMvc.perform(put("/api/orders/{id}/status", ORDER_ID)
+                .param("status", newStatus.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ORDER_ID));
+        
+        verify(orderService).updateOrderStatus(ORDER_ID, newStatus);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void deleteOrder_asAdmin_shouldReturnNoContent() throws Exception {
+        // Arrange
+        doNothing().when(orderService).deleteOrder(ORDER_ID);
+
+        // Act & Assert
+        mockMvc.perform(delete("/api/orders/{id}", ORDER_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+        
+        verify(orderService).deleteOrder(ORDER_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void deleteOrder_asUser_shouldBeForbidden() throws Exception {
+        // Act & Assert
+        mockMvc.perform(delete("/api/orders/{id}", ORDER_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+        
+        verify(orderService, never()).deleteOrder(any());
     }
 }

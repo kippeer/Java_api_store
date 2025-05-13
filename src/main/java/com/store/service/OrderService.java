@@ -1,6 +1,7 @@
 package com.store.service;
 
 import com.store.dto.OrderDTO;
+import com.store.dto.OrderFilter;
 import com.store.entity.Order;
 import com.store.entity.Order.OrderStatus;
 import com.store.mapper.OrderMapper;
@@ -45,28 +46,27 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderDTO> findCurrentUserOrders(Pageable pageable) {
-        return orderRepository.findByUserId(orderAuthorizationService.getCurrentUser().getId(), pageable)
-                .map(orderMapper::toDTO);
+    public Page<OrderDTO> findOrdersByFilter(OrderFilter filter, Pageable pageable) {
+        Long userId = Boolean.TRUE.equals(filter.getOnlyCurrentUser())
+                ? orderAuthorizationService.getCurrentUser().getId()
+                : filter.getUserId();
+
+        return orderRepository.findByFiltroDinamico(
+                userId,
+                filter.getStatus(),
+                filter.getProductId(),
+                filter.getMinQuantity(),
+                filter.getMaxQuantity(),
+                filter.getMinPrice(),
+                filter.getMaxPrice(),
+                filter.getMinAmount(),
+                filter.getMaxAmount(),
+                filter.getStartDate(),
+                filter.getEndDate(),
+                pageable
+        ).map(orderMapper::toDTO);
     }
 
-    @Transactional(readOnly = true)
-    public Page<OrderDTO> findOrdersByStatus(OrderStatus status, Pageable pageable) {
-        return orderRepository.findByStatus(status, pageable)
-                .map(orderMapper::toDTO);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<OrderDTO> findOrdersByDateRange(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        return orderRepository.findByDateRange(startDate, endDate, pageable)
-                .map(orderMapper::toDTO);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<OrderDTO> findOrdersByAmountRange(BigDecimal minAmount, BigDecimal maxAmount, Pageable pageable) {
-        return orderRepository.findByTotalAmountRange(minAmount, maxAmount, pageable)
-                .map(orderMapper::toDTO);
-    }
 
     @Transactional
     public OrderDTO createOrder(OrderDTO orderDTO) {

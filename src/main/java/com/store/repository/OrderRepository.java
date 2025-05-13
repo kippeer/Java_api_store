@@ -16,20 +16,32 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    Page<Order> findByUserId(Long userId, Pageable pageable);
-
-    Page<Order> findByStatus(OrderStatus status, Pageable pageable);
-
-    @Query("SELECT o FROM Order o WHERE o.createdAt BETWEEN :startDate AND :endDate")
-    Page<Order> findByDateRange(@Param("startDate") LocalDateTime startDate,
-                                @Param("endDate") LocalDateTime endDate,
-                                Pageable pageable);
-
-    @Query("SELECT o FROM Order o WHERE o.totalAmount >= :minAmount AND o.totalAmount <= :maxAmount")
-    Page<Order> findByTotalAmountRange(@Param("minAmount") BigDecimal minAmount,
-                                       @Param("maxAmount") BigDecimal maxAmount,
-                                       Pageable pageable);
-
+    @Query("SELECT DISTINCT o FROM Order o " +
+            "LEFT JOIN o.items i " +
+            "LEFT JOIN i.product p " +
+            "WHERE (:userId IS NULL OR o.user.id = :userId) " +
+            "AND (:status IS NULL OR o.status = :status) " +
+            "AND (:productId IS NULL OR p.id = :productId) " +
+            "AND (:minQuantity IS NULL OR i.quantity >= :minQuantity) " +
+            "AND (:maxQuantity IS NULL OR i.quantity <= :maxQuantity) " +
+            "AND (:minPrice IS NULL OR i.price >= :minPrice) " +
+            "AND (:maxPrice IS NULL OR i.price <= :maxPrice) " +
+            "AND (:minAmount IS NULL OR o.totalAmount >= :minAmount) " +
+            "AND (:maxAmount IS NULL OR o.totalAmount <= :maxAmount) " +
+            "AND (:startDate IS NULL OR :endDate IS NULL OR o.createdAt BETWEEN :startDate AND :endDate)")
+    Page<Order> findByFiltroDinamico(
+            @Param("userId") Long userId,
+            @Param("status") Order.OrderStatus status,
+            @Param("productId") Long productId,
+            @Param("minQuantity") Integer minQuantity,
+            @Param("maxQuantity") Integer maxQuantity,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("minAmount") BigDecimal minAmount,
+            @Param("maxAmount") BigDecimal maxAmount,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            Pageable pageable);
 
     List<Order> findByCreatedAtBetweenAndStatus(LocalDateTime startDate, LocalDateTime endDate, Order.OrderStatus status);
 }
