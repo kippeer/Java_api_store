@@ -5,7 +5,7 @@ import com.store.entity.Order;
 import com.store.entity.Order.OrderStatus;
 import com.store.mapper.OrderMapper;
 import com.store.repository.OrderRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.store.exceptions.OrderNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +24,13 @@ public class OrderService {
     private final OrderAuthorizationService orderAuthorizationService;
     private final OrderStatusService orderStatusService;
 
+    // Método genérico para buscar uma ordem por ID
+    private Order getOrderById(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException(id));
+    }
+
+
     @Transactional(readOnly = true)
     public Page<OrderDTO> findAllOrders(Pageable pageable) {
         return orderRepository.findAll(pageable)
@@ -32,18 +39,15 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderDTO findOrderById(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + id));
+        Order order = getOrderById(id);
         orderAuthorizationService.checkOrderAccess(order);
         return orderMapper.toDTO(order);
     }
 
     @Transactional(readOnly = true)
     public Page<OrderDTO> findCurrentUserOrders(Pageable pageable) {
-        return orderRepository.findByUserId(
-                orderAuthorizationService.getCurrentUser().getId(), 
-                pageable
-        ).map(orderMapper::toDTO);
+        return orderRepository.findByUserId(orderAuthorizationService.getCurrentUser().getId(), pageable)
+                .map(orderMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
@@ -82,7 +86,7 @@ public class OrderService {
     @Transactional
     public void deleteOrder(Long id) {
         if (!orderRepository.existsById(id)) {
-            throw new EntityNotFoundException("Order not found with id: " + id);
+            throw new OrderNotFoundException( id);
         }
         orderRepository.deleteById(id);
     }
