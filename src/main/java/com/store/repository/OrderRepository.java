@@ -16,32 +16,39 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    @Query("SELECT DISTINCT o FROM Order o " +
-            "LEFT JOIN o.items i " +
-            "LEFT JOIN i.product p " +
-            "WHERE (:userId IS NULL OR o.user.id = :userId) " +
-            "AND (:status IS NULL OR o.status = :status) " +
-            "AND (:productId IS NULL OR p.id = :productId) " +
-            "AND (:minQuantity IS NULL OR i.quantity >= :minQuantity) " +
-            "AND (:maxQuantity IS NULL OR i.quantity <= :maxQuantity) " +
-            "AND (:minPrice IS NULL OR i.price >= :minPrice) " +
-            "AND (:maxPrice IS NULL OR i.price <= :maxPrice) " +
-            "AND (:minAmount IS NULL OR o.totalAmount >= :minAmount) " +
-            "AND (:maxAmount IS NULL OR o.totalAmount <= :maxAmount) " +
-            "AND (:startDate IS NULL OR :endDate IS NULL OR o.createdAt BETWEEN :startDate AND :endDate)")
-    Page<Order> findByFiltroDinamico(
-            @Param("userId") Long userId,
-            @Param("status") Order.OrderStatus status,
-            @Param("productId") Long productId,
-            @Param("minQuantity") Integer minQuantity,
-            @Param("maxQuantity") Integer maxQuantity,
-            @Param("minPrice") BigDecimal minPrice,
-            @Param("maxPrice") BigDecimal maxPrice,
-            @Param("minAmount") BigDecimal minAmount,
-            @Param("maxAmount") BigDecimal maxAmount,
+    @Query("SELECT o FROM Order o WHERE o.user.id = :userId")
+    Page<Order> findByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT o FROM Order o WHERE o.status = :status")
+    Page<Order> findByStatus(@Param("status") OrderStatus status, Pageable pageable);
+
+    @Query("""
+        SELECT o FROM Order o 
+        WHERE (:startDate IS NULL OR o.createdAt >= :startDate)
+        AND (:endDate IS NULL OR o.createdAt <= :endDate)
+        AND (:status IS NULL OR o.status = :status)
+        AND (:minAmount IS NULL OR o.totalAmount >= :minAmount)
+        AND (:maxAmount IS NULL OR o.totalAmount <= :maxAmount)
+        AND (:userId IS NULL OR o.user.id = :userId)
+    """)
+    Page<Order> findOrdersByFilters(
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
-            Pageable pageable);
+            @Param("status") OrderStatus status,
+            @Param("minAmount") BigDecimal minAmount,
+            @Param("maxAmount") BigDecimal maxAmount,
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
 
-    List<Order> findByCreatedAtBetweenAndStatus(LocalDateTime startDate, LocalDateTime endDate, Order.OrderStatus status);
+    @Query("""
+        SELECT o FROM Order o 
+        WHERE o.createdAt BETWEEN :startDate AND :endDate 
+        AND o.status = :status
+    """)
+    List<Order> findByDateRangeAndStatus(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("status") OrderStatus status
+    );
 }

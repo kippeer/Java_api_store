@@ -5,7 +5,6 @@ import com.store.dto.ReportDTO.SalesReportDTO;
 import com.store.entity.Order;
 import com.store.mapper.OrderReportMapper;
 import com.store.repository.OrderRepository;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -19,7 +18,7 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public SalesReportDTO generateSalesReport(LocalDateTime startDate, LocalDateTime endDate) {
-        List<Order> orders = orderRepository.findByCreatedAtBetweenAndStatus(
+        List<Order> orders = orderRepository.findByDateRangeAndStatus(
                 startDate,
                 endDate,
                 Order.OrderStatus.DELIVERED

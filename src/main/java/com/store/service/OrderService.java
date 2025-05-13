@@ -1,7 +1,7 @@
 package com.store.service;
 
 import com.store.dto.OrderDTO;
-import com.store.dto.OrderFilter;
+import com.store.dto.OrderFilterDTO;
 import com.store.entity.Order;
 import com.store.entity.Order.OrderStatus;
 import com.store.mapper.OrderMapper;
@@ -9,11 +9,11 @@ import com.store.repository.OrderRepository;
 import com.store.exceptions.OrderNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -25,17 +25,34 @@ public class OrderService {
     private final OrderAuthorizationService orderAuthorizationService;
     private final OrderStatusService orderStatusService;
 
-    // Método genérico para buscar uma ordem por ID
     private Order getOrderById(Long id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
     }
 
-
     @Transactional(readOnly = true)
-    public Page<OrderDTO> findAllOrders(Pageable pageable) {
-        return orderRepository.findAll(pageable)
-                .map(orderMapper::toDTO);
+    public Page<OrderDTO> findOrders(OrderFilterDTO filterDTO, Pageable pageable) {
+        // If specific order ID is requested
+        if (filterDTO.getId() != null) {
+            Order order = getOrderById(filterDTO.getId());
+            orderAuthorizationService.checkOrderAccess(order);
+            OrderDTO orderDTO = orderMapper.toDTO(order);
+            return new PageImpl<>(Collections.singletonList(orderDTO), pageable, 1);
+        }
+
+        // Get current user ID if needed
+        Long userId = filterDTO.isCurrentUserOnly() ?
+                orderAuthorizationService.getCurrentUser().getId() : null;
+
+        return orderRepository.findOrdersByFilters(
+                filterDTO.getStartDate(),
+                filterDTO.getEndDate(),
+                filterDTO.getStatus(),
+                filterDTO.getMinAmount(),
+                filterDTO.getMaxAmount(),
+                userId,
+                pageable
+        ).map(orderMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
@@ -44,29 +61,6 @@ public class OrderService {
         orderAuthorizationService.checkOrderAccess(order);
         return orderMapper.toDTO(order);
     }
-
-    @Transactional(readOnly = true)
-    public Page<OrderDTO> findOrdersByFilter(OrderFilter filter, Pageable pageable) {
-        Long userId = Boolean.TRUE.equals(filter.getOnlyCurrentUser())
-                ? orderAuthorizationService.getCurrentUser().getId()
-                : filter.getUserId();
-
-        return orderRepository.findByFiltroDinamico(
-                userId,
-                filter.getStatus(),
-                filter.getProductId(),
-                filter.getMinQuantity(),
-                filter.getMaxQuantity(),
-                filter.getMinPrice(),
-                filter.getMaxPrice(),
-                filter.getMinAmount(),
-                filter.getMaxAmount(),
-                filter.getStartDate(),
-                filter.getEndDate(),
-                pageable
-        ).map(orderMapper::toDTO);
-    }
-
 
     @Transactional
     public OrderDTO createOrder(OrderDTO orderDTO) {
@@ -86,7 +80,7 @@ public class OrderService {
     @Transactional
     public void deleteOrder(Long id) {
         if (!orderRepository.existsById(id)) {
-            throw new OrderNotFoundException( id);
+            throw new OrderNotFoundException(id);
         }
         orderRepository.deleteById(id);
     }
