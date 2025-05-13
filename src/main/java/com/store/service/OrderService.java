@@ -71,7 +71,7 @@ public class OrderService {
 
     @Transactional
     public OrderDTO updateOrder(OrderDTO orderDTO) {
-        return orderMapper.toDTO(orderUpdateService.updateOrder(orderDTO));
+        return orderUpdateService.updateOrder(orderDTO);
     }
 
     @Transactional
