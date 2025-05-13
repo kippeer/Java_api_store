@@ -5,6 +5,7 @@ import com.store.entity.Order;
 import com.store.entity.OrderItem;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
@@ -25,4 +26,9 @@ public interface OrderMapper {
     @Mapping(source = "product.id", target = "productId")
     @Mapping(source = "product.name", target = "productName")
     OrderDTO.OrderItemDTO toOrderItemDTO(OrderItem orderItem);
+
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "items", ignore = true) // se você não estiver atualizando os itens aqui
+    void updateOrderFromDTO(OrderDTO dto, @MappingTarget Order order);
 }
