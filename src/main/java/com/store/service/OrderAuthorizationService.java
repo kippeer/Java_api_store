@@ -2,6 +2,7 @@ package com.store.service;
 
 import com.store.entity.Order;
 import com.store.entity.User;
+import com.store.exceptions.UserNotFoundException;
 import com.store.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -15,27 +16,32 @@ public class OrderAuthorizationService {
     private final UserRepository userRepository;
 
     public User getCurrentUser() {
-        // Reusing the JWT authentication that was set in SecurityContextHolder by JwtAuthenticationFilter
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
     public void checkOrderAccess(Order order) {
-        User currentUser = getCurrentUser();
-        if (!isAdmin(currentUser) && !isOrderOwner(order, currentUser)) {
-            throw new AccessDeniedException("You don't have permission to access this order");
-        }
+        checkPermission(order, "access");
     }
 
     public void checkOrderUpdatePermission(Order order) {
+        checkPermission(order, "update");
+    }
+
+    private void checkPermission(Order order, String action) {
         User currentUser = getCurrentUser();
-        if (!isAdmin(currentUser) && !isOrderOwner(order, currentUser)) {
-            throw new AccessDeniedException("You don't have permission to update this order");
+        if (!hasPermission(order, currentUser)) {
+            throw new AccessDeniedException("You don't have permission to " + action + " this order");
         }
     }
 
+    private boolean hasPermission(Order order, User user) {
+        return isAdmin(user) || isOrderOwner(order, user);
+    }
+
     private boolean isAdmin(User user) {
+        // Se possível, use enum de roles em vez de verificar diretamente com string
         return user.getRoles().contains("ADMIN");
     }
 
