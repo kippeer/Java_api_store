@@ -22,51 +22,35 @@ public class OrderCreationService {
     private final OrderMapper orderMapper;
 
     public Order createOrder(OrderDTO orderDTO) {
-        Order order = initializeOrder(orderDTO);
-        List<OrderItem> orderItems = createOrderItems(orderDTO, order);
-        order.setItems(orderItems);
+        Order order = mapOrderFromDTO(orderDTO);
+        order.setItems(createOrderItems(orderDTO, order));
         order.recalculateTotal();
         return orderRepository.save(order);
     }
 
-    private Order initializeOrder(OrderDTO orderDTO) {
-        // Mapeia o DTO diretamente para a entidade Order
+    private Order mapOrderFromDTO(OrderDTO orderDTO) {
         Order order = orderMapper.toOrder(orderDTO);
-
-        // Define o usuário atual
         order.setUser(orderAuthorizationService.getCurrentUser());
-
-        // Usando um método para lidar com valores nulos de forma mais limpa
-        order.setShippingCost(getOrDefault(orderDTO.getShippingCost()));
-        order.setTaxAmount(getOrDefault(orderDTO.getTaxAmount()));
-        order.setDiscountAmount(getOrDefault(orderDTO.getDiscountAmount()));
-        order.setTrackingNumber(orderDTO.getTrackingNumber());
-
         return order;
     }
 
     private List<OrderItem> createOrderItems(OrderDTO orderDTO, Order order) {
-        // Usando Streams para criar a lista de OrderItems de forma mais concisa
         return orderDTO.getItems().stream()
                 .map(itemDTO -> createOrderItem(itemDTO, order))
-                .collect(Collectors.toList());
+                .toList(); // Java 16+ simplificado
     }
 
     private OrderItem createOrderItem(OrderDTO.OrderItemDTO itemDTO, Order order) {
-        // Valida o produto
-        Product product = productStockService.getAndValidateProduct(itemDTO.getProductId(), itemDTO.getQuantity());
+        Product product = productStockService.getAndValidateProduct(
+                itemDTO.getProductId(),
+                itemDTO.getQuantity()
+        );
 
-        // Mapeia o OrderItem usando o mapper
         OrderItem orderItem = orderMapper.toOrderItem(itemDTO);
         orderItem.setOrder(order);
         orderItem.setProduct(product);
-        orderItem.setPrice(product.getPrice());
+        orderItem.setPrice(product.getPrice()); // Garantir preço atualizado
 
         return orderItem;
-    }
-
-    private BigDecimal getOrDefault(BigDecimal value) {
-        // Método para tratar valores nulos
-        return value != null ? value : BigDecimal.ZERO;
     }
 }
